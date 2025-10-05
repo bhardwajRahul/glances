@@ -19,7 +19,7 @@ import tracemalloc
 # Global name
 # Version should start and end with a numerical char
 # See https://packaging.python.org/specifications/core-metadata/#version
-__version__ = "4.4.0_dev5"
+__version__ = "4.4.0_dev6"
 __apiversion__ = '4'
 __author__ = 'Nicolas Hennion <nicolas@nicolargo.com>'
 __license__ = 'LGPLv3'
@@ -104,18 +104,18 @@ def setup_server_mode(args, mode):
 
 
 def maybe_trace_memleak(args, snapshot_begin):
-    if args.memory_leak:
+    if args.trace_malloc or args.memory_leak:
         snapshot_end = tracemalloc.take_snapshot()
+    if args.memory_leak:
         snapshot_diff = snapshot_end.compare_to(snapshot_begin, 'filename')
         memory_leak = sum([s.size_diff for s in snapshot_diff])
         print(f"Memory consumption: {memory_leak / 1000:.1f}KB (see log for details)")
         logger.info("Memory consumption (top 5):")
         for stat in snapshot_diff[:5]:
             logger.info(stat)
-    elif args.trace_malloc:
+    if args.trace_malloc:
         # See more options here: https://docs.python.org/3/library/tracemalloc.html
-        snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics("filename")
+        top_stats = snapshot_end.statistics("filename")
         print("[ Trace malloc - Top 10 ]")
         for stat in top_stats[:10]:
             print(stat)
@@ -187,4 +187,5 @@ def main():
     core = GlancesMain()
 
     # Glances can be ran in standalone, client or server mode
+    start(config=core.get_config(), args=core.get_args())
     start(config=core.get_config(), args=core.get_args())
